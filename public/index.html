@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>AI Roadmap Generator</title>
+	<link rel="stylesheet" href="/styles.css" />
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+	<header class="site-header">
+		<div class="container header-inner">
+			<div class="brand">
+				<div class="brand-mark">🗺️</div>
+				<div class="brand-text">
+					<div class="brand-title">Roadmap Studio</div>
+					<div class="brand-sub">Generate step-by-step learning paths</div>
+				</div>
+			</div>
+		</div>
+	</header>
+	<main class="container">
+		<section class="card">
+			<form id="roadmap-form" class="form-grid">
+				<div class="field">
+					<label for="topic">Topic or Role</label>
+					<input id="topic" name="topic" placeholder="e.g., Frontend Developer, Data Science" required />
+					<small class="hint">Be specific for better plans, e.g., "AI Product Manager"</small>
+				</div>
+				<div class="field">
+					<label for="level">Starting Level</label>
+					<select id="level" name="level">
+						<option value="beginner">Beginner</option>
+						<option value="intermediate">Intermediate</option>
+						<option value="advanced">Advanced</option>
+					</select>
+				</div>
+				<div class="field">
+					<label for="timeframe">Timeframe (months)</label>
+					<input id="timeframe" name="timeframe" type="number" min="1" max="24" value="3" />
+				</div>
+				<div class="field">
+					<label for="model">Model</label>
+					<select id="model" name="model">
+						<option value="deepseek/deepseek-r1:free">deepseek/deepseek-r1:free</option>
+						<option value="google/gemini-2.5-flash-preview">google/gemini-2.5-flash-preview</option>
+					</select>
+				</div>
+				<div class="actions">
+					<button type="submit" class="btn-primary">
+						<span class="btn-icon">✨</span>
+						Generate
+					</button>
+				</div>
+			</form>
+		</section>
+
+		<section id="output" class="output card hidden"></section>
+	</main>
+	<footer class="site-footer">
+		<div class="container footer-inner">Built with OpenRouter • <a href="#" tabindex="-1">Jerwin Gubat</a></div>
+	</footer>
+
+	<script src="/app.js"></script>
+</body>
+</html> 
