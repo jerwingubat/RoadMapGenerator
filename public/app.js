@@ -25,7 +25,6 @@ function renderRoadmap(data) {
 	if (summary) html += `<p class="summary">${summary}</p>`;
 	if (total_estimated_hours) html += `<p class="meta"><span class="badge">Total ~${total_estimated_hours}h</span></p>`;
 
-	// Visual roadmap
 	html += '<div class="roadmap">';
 	if (Array.isArray(milestones)) {
 		for (const m of milestones) {
@@ -60,11 +59,11 @@ function renderRoadmap(data) {
 				html += '</div>';
 			}
 
-			html += '</div>'; // roadmap-card
-			html += '</div>'; // roadmap-node
+			html += '</div>';
+			html += '</div>';
 		}
 	}
-	html += '</div>'; // roadmap
+	html += '</div>';
 
 	output.innerHTML = html;
 }
@@ -72,22 +71,20 @@ function renderRoadmap(data) {
 async function populateModels() {
 	const select = document.getElementById('model');
 	if (!select) return;
-	try {
-		const res = await fetch('/api/models');
-		if (!res.ok) return;
-		const { models } = await res.json();
-		select.innerHTML = '';
-		const preferred = ['deepseek/deepseek-r1:free', 'google/gemini-2.5-flash-preview'];
-		const sorted = models.sort((a,b) => preferred.indexOf(a.id) - preferred.indexOf(b.id));
-		for (const m of sorted) {
-			const opt = document.createElement('option');
-			opt.value = m.id;
-			opt.textContent = m.id;
-			select.appendChild(opt);
-		}
-		const deepseekOpt = Array.from(select.options).find(o => o.value === 'deepseek/deepseek-r1:free');
-		if (deepseekOpt) select.value = 'deepseek/deepseek-r1:free';
-	} catch {}
+	const preferred = [
+		'deepseek/deepseek-chat-v3-0324:free',
+		'meta-llama/llama-4-maverick:free',
+		'deepseek/deepseek-r1:free',
+		'qwen/qwen3-235b-a22b:free'
+	];
+	select.innerHTML = '';
+	for (const id of preferred) {
+		const opt = document.createElement('option');
+		opt.value = id;
+		opt.textContent = id;
+		select.appendChild(opt);
+	}
+	select.value = preferred[0];
 }
 
 populateModels();

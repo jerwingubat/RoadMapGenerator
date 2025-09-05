@@ -26,9 +26,21 @@ const REQUEST_INTERVAL = 1000; // ms
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 3000, 5000];
 const MODELS = [
+	'deepseek/deepseek-chat-v3-0324:free',
+	'meta-llama/llama-4-maverick:free',
 	'deepseek/deepseek-r1:free',
-	'google/gemini-2.5-flash-preview'
+	'qwen/qwen3-235b-a22b:free'
 ];
+
+// Add rate limit handling
+function isRateLimitError(errorText) {
+	try {
+		const error = JSON.parse(errorText);
+		return error.error && error.error.code === 429;
+	} catch {
+		return false;
+	}
+}
 
 app.get('/api/models', async (_req, res) => {
 	try {

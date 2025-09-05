@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head> 
+<head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>AI Roadmap Generator</title>
@@ -13,7 +13,7 @@
 	<header class="site-header">
 		<div class="container header-inner">
 			<div class="brand">
-				<div class="brand-mark">🗺️</div>
+				<div class="brand-mark"></div>
 				<div class="brand-text">
 					<div class="brand-title">Roadmap Studio</div>
 					<div class="brand-sub">Generate step-by-step learning paths</div>
@@ -44,13 +44,15 @@
 				<div class="field">
 					<label for="model">Model</label>
 					<select id="model" name="model">
+						<option value="deepseek/deepseek-chat-v3-0324:free">deepseek/deepseek-chat-v3-0324:free</option>
+						<option value="meta-llama/llama-4-maverick:free">meta-llama/llama-4-maverick:free</option>
 						<option value="deepseek/deepseek-r1:free">deepseek/deepseek-r1:free</option>
-						<option value="google/gemini-2.5-flash-preview">google/gemini-2.5-flash-preview</option>
+						<option value="qwen/qwen3-235b-a22b:free">qwen/qwen3-235b-a22b:free</option>
 					</select>
 				</div>
 				<div class="actions">
 					<button type="submit" class="btn-primary">
-						<span class="btn-icon">✨</span>
+						<span class="btn-icon"></span>
 						Generate
 					</button>
 				</div>
@@ -60,7 +62,7 @@
 		<section id="output" class="output card hidden"></section>
 	</main>
 	<footer class="site-footer">
-		<div class="container footer-inner">Built with OpenRouter • <a href="#" tabindex="-1">Jerwin Gubat</a></div>
+		<div class="container footer-inner">Developed by • <a href="#" tabindex="-1">Jerwin Gubat</a></div>
 	</footer>
 
 	<script src="/app.js"></script>
