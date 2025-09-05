@@ -8,6 +8,7 @@ const MODELS = [
 	'qwen/qwen3-235b-a22b:free'
 ];
 
+
 function wait(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
