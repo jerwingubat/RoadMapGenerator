@@ -1,6 +1,6 @@
 const { MAX_RETRIES, RETRY_DELAYS, MODELS, wait, tryExtractJson, callOpenRouterChat } = require('./_common');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
 	if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 	try {
 		const { topic, level = 'beginner', timeframeMonths = 3, model } = req.body || {};

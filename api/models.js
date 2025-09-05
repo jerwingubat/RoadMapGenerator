@@ -1,6 +1,6 @@
 const { API_URL } = require('./_common');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
 	try {
 		const response = await fetch('https://openrouter.ai/api/v1/models', {
 			headers: {
