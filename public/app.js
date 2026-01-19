@@ -69,26 +69,22 @@ class RoadmapGenerator {
 		
 		if (!sidebar || !sidebarToggle) return;
 		
-		// Toggle sidebar
 		sidebarToggle.addEventListener('click', () => {
 			this.toggleSidebar();
 		});
 		
-		// Close sidebar
 		if (sidebarClose) {
 			sidebarClose.addEventListener('click', () => {
 				this.closeSidebar();
 			});
 		}
 		
-		// Close on overlay click
 		if (sidebarOverlay) {
 			sidebarOverlay.addEventListener('click', () => {
 				this.closeSidebar();
 			});
 		}
 		
-		// Close on Escape key
 		document.addEventListener('keydown', (e) => {
 			if (e.key === 'Escape' && sidebar.classList.contains('open')) {
 				this.closeSidebar();
@@ -239,7 +235,6 @@ class RoadmapGenerator {
 			this.renderRoadmap(result);
 			this.announce('Roadmap generated successfully');
 			
-			// Auto-save the roadmap
 			await this.saveRoadmap();
 			
 		} catch (error) {
@@ -359,8 +354,13 @@ class RoadmapGenerator {
 
 		let html = `
 			<div class="roadmap-header">
-				<h2 class="roadmap-title">${this.escapeHtml(title || 'Learning Roadmap')}</h2>
-				${summary ? `<p class="roadmap-summary">${this.escapeHtml(summary)}</p>` : ''}
+				<div class="roadmap-header-top">
+					<div>
+						<h2 class="roadmap-title">${this.escapeHtml(title || 'Learning Roadmap')}</h2>
+						${summary ? `<p class="roadmap-summary">${this.escapeHtml(summary)}</p>` : ''}
+					</div>
+					<div class="roadmap-actions"></div>
+				</div>
 				<div class="roadmap-meta">
 					${total_estimated_hours ? `<span class="badge badge-primary">~${total_estimated_hours} hours total</span>` : ''}
 					<span class="badge badge-secondary">${lastFormData.level} level</span>
@@ -464,7 +464,6 @@ class RoadmapGenerator {
 	}
 	
 	setupRoadmapInteractions() {
-		// Add expand/collapse functionality for steps
 		const stepTitles = this.output.querySelectorAll('.step-title');
 		stepTitles.forEach(title => {
 			title.style.cursor = 'pointer';
@@ -504,10 +503,11 @@ class RoadmapGenerator {
 	}
 	
 	addCopyButton() {
-		const roadmapHeader = this.output.querySelector('.roadmap-header');
-		if (!roadmapHeader) return;
+		const actionsContainer = this.output.querySelector('.roadmap-actions');
+		if (!actionsContainer) return;
 		
 		const copyButton = document.createElement('button');
+		copyButton.type = 'button';
 		copyButton.className = 'btn btn-secondary copy-button';
 		copyButton.innerHTML = `
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -517,18 +517,29 @@ class RoadmapGenerator {
 			Copy Roadmap
 		`;
 		
-		copyButton.addEventListener('click', this.copyRoadmap.bind(this));
-		roadmapHeader.appendChild(copyButton);
+		copyButton.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			this.copyRoadmap();
+		});
+		actionsContainer.appendChild(copyButton);
 	}
 	
 	addSaveButton() {
-		const roadmapHeader = this.output.querySelector('.roadmap-header');
-		if (!roadmapHeader || !this.currentRoadmap) return;
+		const actionsContainer = this.output.querySelector('.roadmap-actions');
+		if (!actionsContainer || !this.currentRoadmap) {
+			console.log('Cannot add save button:', { actionsContainer: !!actionsContainer, currentRoadmap: !!this.currentRoadmap });
+			return;
+		}
 		
-		// Check if save button already exists
-		if (roadmapHeader.querySelector('.save-button')) return;
+		const existingButton = actionsContainer.querySelector('.save-button');
+		if (existingButton) {
+			console.log('Save button already exists');
+			return;
+		}
 		
 		const saveButton = document.createElement('button');
+		saveButton.type = 'button';
 		saveButton.className = 'btn btn-secondary save-button';
 		saveButton.innerHTML = `
 			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -539,12 +550,27 @@ class RoadmapGenerator {
 			Save Roadmap
 		`;
 		
-		saveButton.addEventListener('click', () => this.saveRoadmap(true));
-		roadmapHeader.appendChild(saveButton);
+		saveButton.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			console.log('Save button clicked');
+			this.saveRoadmap(true);
+		});
+		
+		actionsContainer.appendChild(saveButton);
+		console.log('Save button added successfully');
 	}
 	
 	async saveRoadmap(showFeedback = false) {
-		if (!this.currentRoadmap) return;
+		if (!this.currentRoadmap) {
+			console.error('Cannot save: no current roadmap');
+			if (showFeedback) {
+				this.announce('No roadmap to save');
+			}
+			return;
+		}
+		
+		console.log('Saving roadmap:', { roadmap: !!this.currentRoadmap, metadata: !!this.currentMetadata });
 		
 		try {
 			const response = await fetch('/api/roadmap/save', {
@@ -559,10 +585,13 @@ class RoadmapGenerator {
 			});
 			
 			if (!response.ok) {
-				throw new Error('Failed to save roadmap');
+				const errorText = await response.text();
+				console.error('Save failed:', response.status, errorText);
+				throw new Error(`Failed to save roadmap: ${response.status}`);
 			}
 			
 			const result = await response.json();
+			console.log('Roadmap saved successfully:', result.id);
 			this.savedRoadmapId = result.id;
 			
 			if (showFeedback) {
@@ -585,13 +614,12 @@ class RoadmapGenerator {
 				this.announce('Roadmap saved successfully');
 			}
 			
-			// Refresh saved roadmaps list
 			await this.loadSavedRoadmaps();
 			
 		} catch (error) {
 			console.error('Error saving roadmap:', error);
 			if (showFeedback) {
-				this.announce('Failed to save roadmap');
+				this.announce(`Failed to save roadmap: ${error.message}`);
 			}
 		}
 	}
@@ -614,7 +642,6 @@ class RoadmapGenerator {
 		
 		if (!sidebarBody) return;
 		
-		// Update badge count
 		if (sidebarBadge) {
 			sidebarBadge.textContent = roadmaps.length.toString();
 			sidebarBadge.style.display = roadmaps.length > 0 ? 'flex' : 'none';
@@ -668,7 +695,6 @@ class RoadmapGenerator {
 		html += '</div>';
 		sidebarBody.innerHTML = html;
 		
-		// Add event listeners
 		sidebarBody.querySelectorAll('.load-roadmap-btn').forEach(btn => {
 			btn.addEventListener('click', () => {
 				const id = btn.getAttribute('data-id');
@@ -701,10 +727,8 @@ class RoadmapGenerator {
 			this.showOutput();
 			this.announce('Roadmap loaded successfully');
 			
-			// Close sidebar after loading
 			this.closeSidebar();
 			
-			// Scroll to top
 			window.scrollTo({ top: 0, behavior: 'smooth' });
 			
 		} catch (error) {
@@ -823,55 +847,43 @@ class RoadmapGenerator {
 			const data = await response.json();
 			const models = data.models || [];
 			
-			// Clear existing options
 			select.innerHTML = '';
 			
 			if (models.length === 0) {
-				// If no models found, use fallback
 				this.populateFallbackModels();
 				return;
 			}
 			
-			// Add all free models from API
 			models.forEach(model => {
 				const option = document.createElement('option');
 				option.value = model.id;
-				// Use the model name from API, or format the ID nicely
 				const displayName = model.name || this.formatModelName(model.id);
 				option.textContent = displayName;
 				select.appendChild(option);
 			});
 			
-			// Set default selection to first model
 			if (models.length > 0) {
 				select.value = models[0].id;
 			}
 			
 		} catch (error) {
 			console.error('Failed to populate models:', error);
-			// Fallback to hardcoded models
 			this.populateFallbackModels();
 		}
 	}
 	
 	formatModelName(modelId) {
-		// Format model ID into a readable name
-		// e.g., "deepseek/deepseek-chat-v3-0324:free" -> "DeepSeek Chat v3"
 		if (!modelId) return modelId;
 		
-		// Remove :free suffix
 		let name = modelId.replace(/:free$/, '');
 		
-		// Split by / and take the last part
 		const parts = name.split('/');
 		name = parts[parts.length - 1];
 		
-		// Replace hyphens with spaces and capitalize words
 		name = name
 			.replace(/-/g, ' ')
 			.replace(/\b\w/g, l => l.toUpperCase());
 		
-		// Clean up version numbers (e.g., "v3 0324" -> "v3")
 		name = name.replace(/\s+v?\d{4,}/g, '');
 		
 		return name;
@@ -925,13 +937,11 @@ function throttle(func, limit) {
 	};
 }
 
-// Initialize the application
 let roadmapGenerator;
 
 document.addEventListener('DOMContentLoaded', () => {
 	roadmapGenerator = new RoadmapGenerator();
 	
-	// Add smooth scrolling for anchor links
 	document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 		anchor.addEventListener('click', function (e) {
 	e.preventDefault();
@@ -945,7 +955,6 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	});
 	
-	// Add intersection observer for animations
 	const observerOptions = {
 		threshold: 0.1,
 		rootMargin: '0px 0px -50px 0px'
@@ -959,21 +968,17 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	}, observerOptions);
 	
-	// Observe elements for animation
 	document.querySelectorAll('.feature-card, .roadmap-node').forEach(el => {
 		observer.observe(el);
 	});
 });
 
-// Handle page visibility changes
 document.addEventListener('visibilitychange', () => {
 	if (document.hidden && roadmapGenerator?.isGenerating) {
-		// Optionally pause or cancel generation when page is hidden
 		console.log('Page hidden during generation');
 	}
 });
 
-// Handle online/offline status
 window.addEventListener('online', () => {
 	console.log('Connection restored');
 });
@@ -985,5 +990,4 @@ window.addEventListener('offline', () => {
 	}
 });
 
-// Export for global access
 window.roadmapGenerator = roadmapGenerator; 

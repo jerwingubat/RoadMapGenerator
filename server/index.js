@@ -7,7 +7,6 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Storage directory for saved roadmaps
 const STORAGE_DIR = path.join(__dirname, '..', 'data');
 const ROADMAPS_FILE = path.join(STORAGE_DIR, 'roadmaps.json');
 
@@ -19,7 +18,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Ensure storage directory exists
 async function ensureStorageDir() {
 	try {
 		await fs.mkdir(STORAGE_DIR, { recursive: true });
@@ -28,10 +26,8 @@ async function ensureStorageDir() {
 	}
 }
 
-// Initialize storage on startup
 ensureStorageDir();
 
-// Helper functions for roadmap storage
 async function loadRoadmaps() {
 	try {
 		const data = await fs.readFile(ROADMAPS_FILE, 'utf8');
@@ -89,12 +85,9 @@ app.get('/api/models', async (_req, res) => {
 		}
 		const data = await response.json();
 		
-		// Filter for free models only (models with :free in ID or pricing that indicates free)
 		const freeModels = (data?.data || [])
 			.filter(m => {
-				// Check if model ID contains :free
 				if (m?.id && m.id.includes(':free')) return true;
-				// Check if pricing indicates free (prompt and completion prices are 0 or null)
 				const pricing = m?.pricing || {};
 				const promptPrice = pricing.prompt || 0;
 				const completionPrice = pricing.completion || 0;
@@ -211,7 +204,6 @@ app.post('/api/roadmap', async (req, res) => {
 	}
 });
 
-// Save roadmap endpoint
 app.post('/api/roadmap/save', async (req, res) => {
 	try {
 		const { roadmap, metadata } = req.body;
@@ -238,11 +230,9 @@ app.post('/api/roadmap/save', async (req, res) => {
 	}
 });
 
-// Get all saved roadmaps
 app.get('/api/roadmaps', async (_req, res) => {
 	try {
 		const roadmaps = await loadRoadmaps();
-		// Return only metadata for list view
 		const list = roadmaps.map(r => ({
 			id: r.id,
 			title: r.roadmap?.title || r.metadata?.topic || 'Untitled Roadmap',
@@ -252,14 +242,13 @@ app.get('/api/roadmaps', async (_req, res) => {
 			createdAt: r.createdAt,
 			updatedAt: r.updatedAt
 		}));
-		return res.json({ roadmaps: list.reverse() }); // Most recent first
+		return res.json({ roadmaps: list.reverse() });
 	} catch (err) {
 		console.error('Error loading roadmaps:', err);
 		return res.status(500).json({ error: 'Failed to load roadmaps' });
 	}
 });
 
-// Get a specific roadmap
 app.get('/api/roadmap/:id', async (req, res) => {
 	try {
 		const { id } = req.params;
@@ -277,7 +266,6 @@ app.get('/api/roadmap/:id', async (req, res) => {
 	}
 });
 
-// Delete a roadmap
 app.delete('/api/roadmap/:id', async (req, res) => {
 	try {
 		const { id } = req.params;

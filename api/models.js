@@ -15,12 +15,9 @@ module.exports = async function handler(req, res) {
 		}
 		const data = await response.json();
 		
-		// Filter for free models only (models with :free in ID or pricing that indicates free)
 		const freeModels = (data?.data || [])
 			.filter(m => {
-				// Check if model ID contains :free
 				if (m?.id && m.id.includes(':free')) return true;
-				// Check if pricing indicates free (prompt and completion prices are 0 or null)
 				const pricing = m?.pricing || {};
 				const promptPrice = pricing.prompt || 0;
 				const completionPrice = pricing.completion || 0;
