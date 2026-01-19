@@ -1,10 +1,11 @@
-// Enhanced JavaScript with senior-level practices
 class RoadmapGenerator {
 	constructor() {
 		this.form = document.getElementById('roadmap-form');
 		this.output = document.getElementById('output');
 		this.submitButton = this.form?.querySelector('.btn-primary');
 		this.isGenerating = false;
+		this.currentRoadmap = null;
+		this.currentMetadata = null;
 		
 		this.init();
 	}
@@ -19,24 +20,23 @@ class RoadmapGenerator {
 		this.populateModels();
 		this.setupFormValidation();
 		this.setupAccessibility();
+		this.setupSidebar();
+		this.loadSavedRoadmaps();
 	}
 	
 	setupEventListeners() {
 		this.form.addEventListener('submit', this.handleSubmit.bind(this));
 		
-		// Real-time validation
 		const inputs = this.form.querySelectorAll('input, select');
 		inputs.forEach(input => {
 			input.addEventListener('blur', this.validateField.bind(this));
 			input.addEventListener('input', this.clearFieldError.bind(this));
 		});
-		
-		// Keyboard navigation
+
 		document.addEventListener('keydown', this.handleKeyboard.bind(this));
 	}
 	
 	setupFormValidation() {
-		// Add custom validation messages
 		const topicInput = document.getElementById('topic');
 		if (topicInput) {
 			topicInput.addEventListener('invalid', (e) => {
@@ -50,11 +50,9 @@ class RoadmapGenerator {
 	}
 	
 	setupAccessibility() {
-		// Add ARIA labels and descriptions
 		const form = this.form;
 		form.setAttribute('aria-label', 'Roadmap generation form');
 		
-		// Announce form state changes
 		const announcer = document.createElement('div');
 		announcer.setAttribute('aria-live', 'polite');
 		announcer.setAttribute('aria-atomic', 'true');
@@ -63,8 +61,85 @@ class RoadmapGenerator {
 		this.announcer = announcer;
 	}
 	
+	setupSidebar() {
+		const sidebar = document.getElementById('sidebar');
+		const sidebarToggle = document.getElementById('sidebar-toggle');
+		const sidebarClose = document.getElementById('sidebar-close');
+		const sidebarOverlay = document.getElementById('sidebar-overlay');
+		
+		if (!sidebar || !sidebarToggle) return;
+		
+		// Toggle sidebar
+		sidebarToggle.addEventListener('click', () => {
+			this.toggleSidebar();
+		});
+		
+		// Close sidebar
+		if (sidebarClose) {
+			sidebarClose.addEventListener('click', () => {
+				this.closeSidebar();
+			});
+		}
+		
+		// Close on overlay click
+		if (sidebarOverlay) {
+			sidebarOverlay.addEventListener('click', () => {
+				this.closeSidebar();
+			});
+		}
+		
+		// Close on Escape key
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+				this.closeSidebar();
+			}
+		});
+	}
+	
+	toggleSidebar() {
+		const sidebar = document.getElementById('sidebar');
+		const sidebarToggle = document.getElementById('sidebar-toggle');
+		
+		if (!sidebar) return;
+		
+		const isOpen = sidebar.classList.contains('open');
+		
+		if (isOpen) {
+			this.closeSidebar();
+		} else {
+			this.openSidebar();
+		}
+	}
+	
+	openSidebar() {
+		const sidebar = document.getElementById('sidebar');
+		const sidebarToggle = document.getElementById('sidebar-toggle');
+		const body = document.body;
+		
+		if (!sidebar) return;
+		
+		sidebar.classList.add('open');
+		if (sidebarToggle) {
+			sidebarToggle.setAttribute('aria-expanded', 'true');
+		}
+		body.style.overflow = 'hidden';
+	}
+	
+	closeSidebar() {
+		const sidebar = document.getElementById('sidebar');
+		const sidebarToggle = document.getElementById('sidebar-toggle');
+		const body = document.body;
+		
+		if (!sidebar) return;
+		
+		sidebar.classList.remove('open');
+		if (sidebarToggle) {
+			sidebarToggle.setAttribute('aria-expanded', 'false');
+		}
+		body.style.overflow = '';
+	}
+	
 	handleKeyboard(e) {
-		// Escape key to cancel generation
 		if (e.key === 'Escape' && this.isGenerating) {
 			this.cancelGeneration();
 		}
@@ -89,7 +164,6 @@ class RoadmapGenerator {
 		const isValid = form.checkValidity();
 		
 		if (!isValid) {
-			// Focus first invalid field
 			const firstInvalid = form.querySelector(':invalid');
 			if (firstInvalid) {
 				firstInvalid.focus();
@@ -119,7 +193,6 @@ class RoadmapGenerator {
 		wrapper.classList.toggle('field-error', !isValid);
 		wrapper.classList.toggle('field-valid', isValid && field.value.trim());
 		
-		// Add/remove error message
 		let errorElement = wrapper.querySelector('.field-error-message');
 		if (!isValid && !errorElement) {
 			errorElement = document.createElement('div');
@@ -156,8 +229,18 @@ class RoadmapGenerator {
 			}
 			
 			const result = await response.json();
+			this.currentRoadmap = result;
+			this.currentMetadata = {
+				topic: data.topic,
+				level: data.level,
+				timeframeMonths: data.timeframeMonths,
+				model: data.model
+			};
 			this.renderRoadmap(result);
 			this.announce('Roadmap generated successfully');
+			
+			// Auto-save the roadmap
+			await this.saveRoadmap();
 			
 		} catch (error) {
 			this.handleNetworkError(error);
@@ -300,6 +383,7 @@ class RoadmapGenerator {
 
 		this.output.innerHTML = html;
 		this.setupRoadmapInteractions();
+		this.addSaveButton();
 	}
 	
 	renderMilestone(milestone, index) {
@@ -397,7 +481,6 @@ class RoadmapGenerator {
 			});
 		});
 		
-		// Add copy functionality for the entire roadmap
 		this.addCopyButton();
 	}
 	
@@ -438,12 +521,226 @@ class RoadmapGenerator {
 		roadmapHeader.appendChild(copyButton);
 	}
 	
+	addSaveButton() {
+		const roadmapHeader = this.output.querySelector('.roadmap-header');
+		if (!roadmapHeader || !this.currentRoadmap) return;
+		
+		// Check if save button already exists
+		if (roadmapHeader.querySelector('.save-button')) return;
+		
+		const saveButton = document.createElement('button');
+		saveButton.className = 'btn btn-secondary save-button';
+		saveButton.innerHTML = `
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+				<polyline points="17 21 17 13 7 13 7 21"/>
+				<polyline points="7 3 7 8 15 8"/>
+			</svg>
+			Save Roadmap
+		`;
+		
+		saveButton.addEventListener('click', () => this.saveRoadmap(true));
+		roadmapHeader.appendChild(saveButton);
+	}
+	
+	async saveRoadmap(showFeedback = false) {
+		if (!this.currentRoadmap) return;
+		
+		try {
+			const response = await fetch('/api/roadmap/save', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					roadmap: this.currentRoadmap,
+					metadata: this.currentMetadata
+				})
+			});
+			
+			if (!response.ok) {
+				throw new Error('Failed to save roadmap');
+			}
+			
+			const result = await response.json();
+			this.savedRoadmapId = result.id;
+			
+			if (showFeedback) {
+				const saveButton = this.output.querySelector('.save-button');
+				if (saveButton) {
+					const originalText = saveButton.innerHTML;
+					saveButton.innerHTML = `
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M20 6L9 17l-5-5"/>
+						</svg>
+						Saved!
+					`;
+					saveButton.classList.add('saved');
+					
+					setTimeout(() => {
+						saveButton.innerHTML = originalText;
+						saveButton.classList.remove('saved');
+					}, 2000);
+				}
+				this.announce('Roadmap saved successfully');
+			}
+			
+			// Refresh saved roadmaps list
+			await this.loadSavedRoadmaps();
+			
+		} catch (error) {
+			console.error('Error saving roadmap:', error);
+			if (showFeedback) {
+				this.announce('Failed to save roadmap');
+			}
+		}
+	}
+	
+	async loadSavedRoadmaps() {
+		try {
+			const response = await fetch('/api/roadmaps');
+			if (!response.ok) return;
+			
+			const data = await response.json();
+			this.renderSavedRoadmaps(data.roadmaps || []);
+		} catch (error) {
+			console.error('Error loading saved roadmaps:', error);
+		}
+	}
+	
+	renderSavedRoadmaps(roadmaps) {
+		const sidebarBody = document.getElementById('sidebar-body');
+		const sidebarBadge = document.getElementById('sidebar-badge');
+		
+		if (!sidebarBody) return;
+		
+		// Update badge count
+		if (sidebarBadge) {
+			sidebarBadge.textContent = roadmaps.length.toString();
+			sidebarBadge.style.display = roadmaps.length > 0 ? 'flex' : 'none';
+		}
+		
+		if (roadmaps.length === 0) {
+			sidebarBody.innerHTML = `
+				<div class="sidebar-empty-state">
+					<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+						<polyline points="14,2 14,8 20,8"/>
+						<line x1="16" y1="13" x2="8" y2="13"/>
+						<line x1="16" y1="17" x2="8" y2="17"/>
+					</svg>
+					<p>No saved roadmaps yet</p>
+					<small>Generate a roadmap to get started</small>
+				</div>
+			`;
+			return;
+		}
+		
+		let html = '<div class="saved-roadmaps-list">';
+		
+		roadmaps.forEach(roadmap => {
+			const date = new Date(roadmap.createdAt);
+			const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+			
+			html += `
+				<div class="saved-roadmap-item" data-id="${this.escapeHtml(roadmap.id)}">
+					<div class="saved-roadmap-info">
+						<h4 class="saved-roadmap-title">${this.escapeHtml(roadmap.title)}</h4>
+						<div class="saved-roadmap-meta">
+							${roadmap.topic ? `<span class="meta-badge">${this.escapeHtml(roadmap.topic)}</span>` : ''}
+							${roadmap.level ? `<span class="meta-badge">${this.escapeHtml(roadmap.level)}</span>` : ''}
+							${roadmap.timeframeMonths ? `<span class="meta-badge">${roadmap.timeframeMonths} months</span>` : ''}
+						</div>
+						<small class="saved-roadmap-date">Saved on ${dateStr}</small>
+					</div>
+					<div class="saved-roadmap-actions">
+						<button class="btn btn-small btn-primary load-roadmap-btn" data-id="${this.escapeHtml(roadmap.id)}">
+							Load
+						</button>
+						<button class="btn btn-small btn-secondary delete-roadmap-btn" data-id="${this.escapeHtml(roadmap.id)}">
+							Delete
+						</button>
+					</div>
+				</div>
+			`;
+		});
+		
+		html += '</div>';
+		sidebarBody.innerHTML = html;
+		
+		// Add event listeners
+		sidebarBody.querySelectorAll('.load-roadmap-btn').forEach(btn => {
+			btn.addEventListener('click', () => {
+				const id = btn.getAttribute('data-id');
+				this.loadRoadmap(id);
+				this.closeSidebar();
+			});
+		});
+		
+		sidebarBody.querySelectorAll('.delete-roadmap-btn').forEach(btn => {
+			btn.addEventListener('click', () => {
+				const id = btn.getAttribute('data-id');
+				this.deleteRoadmap(id);
+			});
+		});
+	}
+	
+	async loadRoadmap(id) {
+		try {
+			const response = await fetch(`/api/roadmap/${id}`);
+			if (!response.ok) {
+				throw new Error('Failed to load roadmap');
+			}
+			
+			const data = await response.json();
+			this.currentRoadmap = data.roadmap;
+			this.currentMetadata = data.metadata || {};
+			this.savedRoadmapId = data.id;
+			
+			this.renderRoadmap(data.roadmap);
+			this.showOutput();
+			this.announce('Roadmap loaded successfully');
+			
+			// Close sidebar after loading
+			this.closeSidebar();
+			
+			// Scroll to top
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+			
+		} catch (error) {
+			console.error('Error loading roadmap:', error);
+			this.announce('Failed to load roadmap');
+		}
+	}
+	
+	async deleteRoadmap(id) {
+		if (!confirm('Are you sure you want to delete this roadmap?')) {
+			return;
+		}
+		
+		try {
+			const response = await fetch(`/api/roadmap/${id}`, {
+				method: 'DELETE'
+			});
+			
+			if (!response.ok) {
+				throw new Error('Failed to delete roadmap');
+			}
+			
+			this.announce('Roadmap deleted successfully');
+			await this.loadSavedRoadmaps();
+			
+		} catch (error) {
+			console.error('Error deleting roadmap:', error);
+			this.announce('Failed to delete roadmap');
+		}
+	}
+	
 	async copyRoadmap() {
 		try {
 			const roadmapText = this.extractRoadmapText();
 			await navigator.clipboard.writeText(roadmapText);
 			
-			// Show success feedback
 			const button = this.output.querySelector('.copy-button');
 			const originalText = button.innerHTML;
 			button.innerHTML = `
@@ -529,23 +826,23 @@ class RoadmapGenerator {
 			// Clear existing options
 			select.innerHTML = '';
 			
-			// Add models with better display names
-			const modelMap = {
-				'deepseek/deepseek-chat-v3-0324:free': 'DeepSeek Chat v3 (Recommended)',
-				'meta-llama/llama-4-maverick:free': 'Llama 4 Maverick',
-				'deepseek/deepseek-r1:free': 'DeepSeek R1',
-				'qwen/qwen3-235b-a22b:free': 'Qwen 3 235B'
-			};
+			if (models.length === 0) {
+				// If no models found, use fallback
+				this.populateFallbackModels();
+				return;
+			}
 			
-			// Add available models
+			// Add all free models from API
 			models.forEach(model => {
 				const option = document.createElement('option');
 				option.value = model.id;
-				option.textContent = modelMap[model.id] || model.name || model.id;
+				// Use the model name from API, or format the ID nicely
+				const displayName = model.name || this.formatModelName(model.id);
+				option.textContent = displayName;
 				select.appendChild(option);
 			});
 			
-			// Set default selection
+			// Set default selection to first model
 			if (models.length > 0) {
 				select.value = models[0].id;
 			}
@@ -555,6 +852,29 @@ class RoadmapGenerator {
 			// Fallback to hardcoded models
 			this.populateFallbackModels();
 		}
+	}
+	
+	formatModelName(modelId) {
+		// Format model ID into a readable name
+		// e.g., "deepseek/deepseek-chat-v3-0324:free" -> "DeepSeek Chat v3"
+		if (!modelId) return modelId;
+		
+		// Remove :free suffix
+		let name = modelId.replace(/:free$/, '');
+		
+		// Split by / and take the last part
+		const parts = name.split('/');
+		name = parts[parts.length - 1];
+		
+		// Replace hyphens with spaces and capitalize words
+		name = name
+			.replace(/-/g, ' ')
+			.replace(/\b\w/g, l => l.toUpperCase());
+		
+		// Clean up version numbers (e.g., "v3 0324" -> "v3")
+		name = name.replace(/\s+v?\d{4,}/g, '');
+		
+		return name;
 	}
 	
 	populateFallbackModels() {

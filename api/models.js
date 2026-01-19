@@ -14,8 +14,27 @@ module.exports = async function handler(req, res) {
 			return res.status(502).json({ error: 'Upstream error', details: text });
 		}
 		const data = await response.json();
-		const models = (data?.data || []).map(m => ({ id: m?.id, name: m?.name || m?.id, pricing: m?.pricing || {}, context_length: m?.context_length })).filter(m => m.id);
-		return res.status(200).json({ models });
+		
+		// Filter for free models only (models with :free in ID or pricing that indicates free)
+		const freeModels = (data?.data || [])
+			.filter(m => {
+				// Check if model ID contains :free
+				if (m?.id && m.id.includes(':free')) return true;
+				// Check if pricing indicates free (prompt and completion prices are 0 or null)
+				const pricing = m?.pricing || {};
+				const promptPrice = pricing.prompt || 0;
+				const completionPrice = pricing.completion || 0;
+				return promptPrice === 0 && completionPrice === 0;
+			})
+			.map(m => ({ 
+				id: m?.id, 
+				name: m?.name || m?.id, 
+				pricing: m?.pricing || {}, 
+				context_length: m?.context_length 
+			}))
+			.filter(m => m.id);
+		
+		return res.status(200).json({ models: freeModels });
 	} catch (err) {
 		console.error(err);
 		return res.status(500).json({ error: 'Internal server error' });

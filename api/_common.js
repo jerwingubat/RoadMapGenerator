@@ -4,8 +4,7 @@ const RETRY_DELAYS = [1000, 3000, 5000];
 const MODELS = [
 	'deepseek/deepseek-chat-v3-0324:free',
 	'meta-llama/llama-4-maverick:free',
-	'deepseek/deepseek-r1:free',
-	'qwen/qwen3-235b-a22b:free'
+	'deepseek/deepseek-r1:free'
 ];
 
 
