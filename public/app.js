@@ -205,7 +205,7 @@ class RoadmapGenerator {
 		return {
 			topic: formData.get('topic').trim(),
 			level: formData.get('level'),
-			timeframeMonths: parseInt(formData.get('timeframe')) || 3,
+			timeframeWeeks: parseInt(formData.get('timeframe')) || 12,
 			model: formData.get('model')
 		};
 	}
@@ -229,7 +229,7 @@ class RoadmapGenerator {
 			this.currentMetadata = {
 				topic: data.topic,
 				level: data.level,
-				timeframeMonths: data.timeframeMonths,
+				timeframeWeeks: data.timeframeWeeks,
 				model: data.model
 			};
 			this.renderRoadmap(result);
@@ -364,7 +364,7 @@ class RoadmapGenerator {
 				<div class="roadmap-meta">
 					${total_estimated_hours ? `<span class="badge badge-primary">~${total_estimated_hours} hours total</span>` : ''}
 					<span class="badge badge-secondary">${lastFormData.level} level</span>
-					<span class="badge badge-secondary">${lastFormData.timeframeMonths} months</span>
+					<span class="badge badge-secondary">${lastFormData.timeframeWeeks} weeks</span>
 				</div>
 			</div>
 		`;
@@ -668,6 +668,9 @@ class RoadmapGenerator {
 		roadmaps.forEach(roadmap => {
 			const date = new Date(roadmap.createdAt);
 			const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+			const timeframeWeeks =
+				roadmap.timeframeWeeks ??
+				(typeof roadmap.timeframeMonths === 'number' ? roadmap.timeframeMonths * 4 : null);
 			
 			html += `
 				<div class="saved-roadmap-item" data-id="${this.escapeHtml(roadmap.id)}">
@@ -676,7 +679,7 @@ class RoadmapGenerator {
 						<div class="saved-roadmap-meta">
 							${roadmap.topic ? `<span class="meta-badge">${this.escapeHtml(roadmap.topic)}</span>` : ''}
 							${roadmap.level ? `<span class="meta-badge">${this.escapeHtml(roadmap.level)}</span>` : ''}
-							${roadmap.timeframeMonths ? `<span class="meta-badge">${roadmap.timeframeMonths} months</span>` : ''}
+							${timeframeWeeks ? `<span class="meta-badge">${timeframeWeeks} weeks</span>` : ''}
 						</div>
 						<small class="saved-roadmap-date">Saved on ${dateStr}</small>
 					</div>

@@ -12,7 +12,9 @@ module.exports = async function handler(req, res) {
 			title: r.roadmap?.title || r.metadata?.topic || 'Untitled Roadmap',
 			topic: r.metadata?.topic || '',
 			level: r.metadata?.level || '',
-			timeframeMonths: r.metadata?.timeframeMonths || 3,
+			timeframeWeeks:
+				r.metadata?.timeframeWeeks ??
+				(typeof r.metadata?.timeframeMonths === 'number' ? r.metadata.timeframeMonths * 4 : 12),
 			createdAt: r.createdAt,
 			updatedAt: r.updatedAt
 		}));
